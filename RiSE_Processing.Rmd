@@ -1,0 +1,312 @@
+---
+title: "RiSE_Processing_VersionA"
+author: "Jadyn Park"
+date: "10/5/2020"
+output: html_document
+---
+
+### project setup
+```{r setup, message = FALSE}
+#load libraries 
+rm(list = ls())
+library(knitr); library(kableExtra); library(reshape2); library(tidyverse); library(dplyr); library(tables)
+```
+
+### import CSVs
+```{r import}
+#currently running subject
+sub.id <- "####" #change sub ID 
+
+#import encoding data
+encode.path <- "/Users/Jadyn/Desktop/RiseR Project/VA_3015_Part 1.csv"
+encode.data <- read.csv(encode.path, header = TRUE)
+
+#import retrieval data
+retrieve.path <- "/Users/Jadyn/Desktop/RiseR Project/VA_3015_Part 2.csv"
+retrieve.data <- read.csv(retrieve.path, header = TRUE)
+```
+
+### process encoding data
+``` {r encoding, message = FALSE, echo = FALSE}
+#record participant's IS response, whether it's 1 or 2
+item.resp <- encode.data %>% group_by(ISBlockSlide.RESP) %>% summarise(count = n())
+numIS = sum(item.resp[1, 2], item.resp[2, 2]) #number of IS responses
+num.NoIS = 36-numIS #number of IS no responses
+
+#record participant's Rel response, whether it's 1 or 2
+rel.resp <- encode.data %>% group_by(RBlockSlide.RESP) %>% summarise(count = n())
+numR = sum(rel.resp[1, 2], rel.resp[2,2]) #number of Rel responses
+num.NoR = 18-numR #number of Rel no responses
+
+numTotal = numIS + numR #number of Total responses
+num.NoTotal = num.NoIS + num.NoR #number of Total no responses
+
+#average RT of IS trials
+RT.IS = mean(encode.data$ISBlockSlide.RT, na.rm = TRUE)
+
+#average RT of R trials
+RT.R = mean(encode.data$RBlockSlide.RT, na.rm = TRUE)
+
+#total average RT
+RT.Total = mean(RT.IS, RT.R)
+
+encode.info <- rbind(numIS, num.NoIS, numR, num.NoR, numTotal, num.NoTotal, RT.IS, RT.R, RT.Total)
+rownames(encode.info) <- c("# of IS Responses", "# of IS no responses", "# of R responses", "# of R no responses", "Total responses", "Total no responses", "IS average RT", "R average RT", "Total average RT")
+
+knitr::kable(format(encode.info, digits = 6, drop0trailing = TRUE), caption = "ENCODING DATA") %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+### process retrieval data
+##### rows 1-10 are Item Recognition (IR) practice, 11-154 are Item Recognition (AR) trials, 155-164 are Associative Recognition practice, and 165-200 are Associative Recognition trials
+##### targets (Item, R, Foils) by confidence (Low, Medium, High)
+``` {r rvtable, message = FALSE, echo = FALSE}
+#create data frame by pulling relevant variables
+data.conf <- retrieve.data %>% 
+  select(CorrectResp, Image_Type, Image_Type_Confidence, Running.Trial.)
+
+#column below was manually added in the original excel worksheet
+data.conf$IS_R_F <- c("", "", "", "", "", "", "", "", "", "", "IS_17", "F_25", "IS_32", "IS_20", "F_47", "IS_5", "F_65", "F_38", "IS_33", "R_35", "F_43", "R_8", "F_22", "F_54", "IS_15", "F_40", "F_3", "F_60", "IS_3", "R_7", "IS_10", "R_14", "F_1", "F_9", "F_62", "F_7", "F_59", "IS_16", "IS_4", "F_28", "F_18", "IS_13", "F_15", "F_36", "F_31", "F_26", "R_21", "IS_19", "F_39", "R_28", "F_64", "R_26", "R_15", "F_57", "R_23", "R_3", "R_31", "F_58", "R_12", "F_11", "F_41", "F_72" ,"R_30", "F_14", "IS_21", "F_29", "F_34", "R_20", "R_5", "R_27", "IS_35", "F_30", "R_11", "F_63", "IS_1", "IS_31", "R_13", "IS_24", "IS_29", "R_18", "IS_8", "IS_36", "F_37", "R_34", "R_36", "R_19", "IS_22", "F_35", "R_24", "R_9", "R_10", "R_4", "IS_11", "R_33", "IS_7", "F_50", "R_32", "F_70", "F_33", "F_12", "F_13", "F_66", "F_44", "IS_12", "IS_34", "F_71", "F_49", "IS_27", "F_4" ,"F_17", "F_52", "F_23", "R_2", "F_16", "IS_30", "F_2", "IS_14", "F_21", "IS_28", "F_53", "F_24", "F_6", "F_69", "F_67", "F_5", "R_1", "R_17", "R_29", "R_6", "F_48", "F_42", "IS_9", "F_51", "IS_6", "F_46", "IS_2", "IS_25", "IS_26", "F_68", "F_45", "F_8", "F_27", "R_16", "IS_23", "F_55", "F_20", "F_32", "R_25", "F_61", "F_10", "F_56", "IS_18", "R_22", "F_19", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "") #I hate hard coding... this looks really bad
+
+#using above column, categorize if the trial was ITEM, R, or FOIL
+data.conf$Category <- ifelse(grepl("IS", data.conf$IS_R_F),"ITEM", 
+                           ifelse(grepl("R", data.conf$IS_R_F), "R",
+                                  ifelse(grepl("F", data.conf$IS_R_F), "FOILS", "")
+                                  )
+                            )
+
+#omit irrelevant rows
+data.conf <- data.conf[data.conf$Running.Trial. == "IRTestBloc", ]
+
+#as factor
+data.conf <- data.conf %>% mutate(
+  Image_Type = factor(Image_Type),
+  Image_Type_Confidence = factor(Image_Type_Confidence, levels = c("High", "Med", "Low")),
+  Category = factor (Category, levels = c("R", "FOILS", "ITEM")))
+
+#create table ... I'm CERTAIN that there's better way to do this...
+  #Item vs. R, Old vs. New, L vs. M vs. H Confidence 
+table.conf <- data.frame(
+  "OLD_L" = c(
+   sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Correct' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'Low'),
+    
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Low'),
+   
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Low'),
+    
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'Low')
+  )
+)
+
+table.conf$OLD_M <- c(
+  sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Correct' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'Med')
+)
+
+table.conf$OLD_H <- c(
+  sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Correct' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'High')
+)
+
+table.conf$New_L <- c(
+  sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Incorrect' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'Low'),
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Low'),
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Low'),
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'Low')
+)
+
+table.conf$New_M <- c(
+  sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Incorrect' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'Med'),
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'Med')
+)
+
+table.conf$New_H <- c(
+  sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Incorrect' &
+      data.conf$Image_Type == 'Old' &
+      data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category == 'R' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category != 'FOILS' &
+          data.conf$CorrectResp == 'Incorrect' &
+          data.conf$Image_Type == 'Old' &
+          data.conf$Image_Type_Confidence == 'High'),
+    sum(data.conf$Category == 'FOILS' & 
+          data.conf$CorrectResp == 'Correct' &
+          data.conf$Image_Type == 'New' &
+          data.conf$Image_Type_Confidence == 'High')
+)
+
+rownames(table.conf) <- c("TARGETS_ITEM", "TARGETS_R", "TARGETS_ALL", "FOILS")
+
+knitr::kable(table.conf, caption = "Targets by Confidence") %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+### Item Recognition Totals
+``` {r retrieval, message = FALSE, echo = FALSE}
+#Item Recognition Totals
+IS.totals <- data.frame(
+  "IS_ITEMS" = c(sum(table.conf[1, 1:3]), sum(table.conf[1, 4:6]), "N/A", "N/A", 
+                 sum(table.conf[1, 1:3])/36),
+  "REL_ITEMS" = c(sum(table.conf[2, 1:3]), sum(table.conf[2, 4:6]), "N/A", "N/A",
+                  sum(table.conf[2, 1:3])/36),
+  "FOILS" = c("N/A", "N/A", sum(table.conf[4, 1:3]), sum(table.conf[4, 4:6]),
+              sum(table.conf[4, 4:6]/72)),
+  "TOTAL" = c(sum(table.conf[1:2, 1:3]), sum(table.conf[1:2, 4:6]), sum(table.conf[4, 1:3]), 
+              sum(table.conf[4, 4:6]), sum(table.conf[1:2, 1:3])/72)
+)
+rownames(IS.totals) <- c('HITS', 'MISSES', 'FA', 'CM', '% Correct')
+
+knitr::kable(format(IS.totals, digits = 6, drop0trailing = TRUE), 
+             caption = "Item Recognition Totals", 
+             col.names = c("IS ITEMS", "REL ITEMS", "FOILS", "TOTAL")) %>%
+  kable_styling(c("striped", "bordered"))
+
+#False Alarm Rate
+FAR <- 1- sum(table.conf[4, 4:6]/72)
+knitr::kable(FAR, caption = "False Alarm Rate",
+             col.names = "FAR") %>%
+  kable_styling(c("striped", "bordered"))
+
+#Item Recognition RTs
+data.RT <- retrieve.data %>%
+  select(IRTestSlide1.RT)
+data.RT <- data.RT[!is.na(data.RT$IRTestSlide1), ]
+data.RT <- cbind(data.conf, data.RT)
+
+IS.Sum <- sum(data.RT[which(data.RT[ ,1] == "Correct" & data.RT[, 2] == "Old"
+                  & data.RT[, 6] == "ITEM"), 7])
+
+IS.Count <- sum(data.conf$Category == 'ITEM' & 
+      data.conf$CorrectResp == 'Correct' &
+      data.conf$Image_Type == 'Old')
+
+R.Sum <- sum(data.RT[which(data.RT[ ,1] == "Correct" & data.RT[, 2] == "Old"
+                  & data.RT[, 6] == "R"), 7])
+
+R.Count <- sum(data.conf$Category == 'R' & 
+      data.conf$CorrectResp == 'Correct' &
+      data.conf$Image_Type == 'Old')
+
+Total.Sum = sum(data.RT[which(data.RT[ ,1] == "Correct" & data.RT[, 2] == "Old"), 7])
+Total.Count = sum(data.conf$CorrectResp == 'Correct' & data.conf$Image_Type == 'Old')
+
+table.RT <- data.frame(
+  "IS_ITEMS" = IS.Sum/IS.Count,
+  "REL_ITEMS" = R.Sum/R.Count,
+  "ALL_ITEMS" = Total.Sum/Total.Count
+)
+
+knitr::kable(table.RT, caption = "Item Recognition RT",
+             col.names = c("IS ITEMS", "REL ITEMS" , "ALL ITEMS")) %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+### Z-space
+``` {r items, message = FALSE, echo = FALSE}
+#targets - item specific
+IS_flip <- c(table.conf[1, 6], table.conf[1, 5], table.conf[1, 4],
+             table.conf[1, 1], table.conf[1, 2], table.conf[1, 3])
+IS_percent <- c()
+  for (i in 1:6) {
+    IS_percent[i] <-sum(IS_flip[i:6])/36
+  }
+
+IS_Z <- c()
+  for(j in c(1:6)) {
+  IS_Z[j] <- if(sum(IS_flip[j:6])/36 == 1) {
+  qnorm(0.999)
+} else if(sum(IS_flip[j:6])/36 ==0) {
+  qnorm(0.001)
+} else {
+  qnorm(sum(IS_flip[j:6])/36)
+}
+  }
+
+ITEM_SPECIFIC <- data.frame(IS_flip, IS_percent, IS_Z)
+
+
+
+
+
+#targets - relational
+
+#targets - all
+
+#foils 
+```
+
+### DPSD Calculator
+``` {r DPSD, echo = TRUE}
+```
+
+### Associative Recognition Totals
