@@ -1,21 +1,18 @@
 ---
-title: "RiSE_Processing_VersionA"
+title: "RiSE_Processing_VersionA (single subject)"
 author: "Jadyn Park"
 date: "10/5/2020"
 output: html_document
 ---
 
-### project setup
+### Project Setup
 ```{r setup, message = FALSE}
 #load libraries 
 rm(list = ls())
-library(knitr); library(kableExtra); library(reshape2); library(tidyverse); library(dplyr); library(tables)
-```
+library(knitr); library(kableExtra); library(reshape2); library(tidyverse); library(dplyr); library(tables); library(hbmem)
 
-### import CSVs
-```{r import}
 #currently running subject
-sub.id <- "####" #change sub ID 
+sub.id <- "3015" 
 
 #import encoding data
 encode.path <- "/Users/Jadyn/Desktop/RiseR Project/VA_3015_Part 1.csv"
@@ -26,7 +23,7 @@ retrieve.path <- "/Users/Jadyn/Desktop/RiseR Project/VA_3015_Part 2.csv"
 retrieve.data <- read.csv(retrieve.path, header = TRUE)
 ```
 
-### process encoding data
+### Encoding Data Summary
 ``` {r encoding, message = FALSE, echo = FALSE}
 #record participant's IS response, whether it's 1 or 2
 item.resp <- encode.data %>% group_by(ISBlockSlide.RESP) %>% summarise(count = n())
@@ -57,7 +54,7 @@ knitr::kable(format(encode.info, digits = 6, drop0trailing = TRUE), caption = "E
   kable_styling(c("striped", "bordered"))
 ```
 
-### process retrieval data
+### Retrieval Data Summary
 ##### rows 1-10 are Item Recognition (IR) practice, 11-154 are Item Recognition (AR) trials, 155-164 are Associative Recognition practice, and 165-200 are Associative Recognition trials
 ##### targets (Item, R, Foils) by confidence (Low, Medium, High)
 ``` {r rvtable, message = FALSE, echo = FALSE}
@@ -65,8 +62,9 @@ knitr::kable(format(encode.info, digits = 6, drop0trailing = TRUE), caption = "E
 data.conf <- retrieve.data %>% 
   select(CorrectResp, Image_Type, Image_Type_Confidence, Running.Trial.)
 
-#column below was manually added in the original excel worksheet
-data.conf$IS_R_F <- c("", "", "", "", "", "", "", "", "", "", "IS_17", "F_25", "IS_32", "IS_20", "F_47", "IS_5", "F_65", "F_38", "IS_33", "R_35", "F_43", "R_8", "F_22", "F_54", "IS_15", "F_40", "F_3", "F_60", "IS_3", "R_7", "IS_10", "R_14", "F_1", "F_9", "F_62", "F_7", "F_59", "IS_16", "IS_4", "F_28", "F_18", "IS_13", "F_15", "F_36", "F_31", "F_26", "R_21", "IS_19", "F_39", "R_28", "F_64", "R_26", "R_15", "F_57", "R_23", "R_3", "R_31", "F_58", "R_12", "F_11", "F_41", "F_72" ,"R_30", "F_14", "IS_21", "F_29", "F_34", "R_20", "R_5", "R_27", "IS_35", "F_30", "R_11", "F_63", "IS_1", "IS_31", "R_13", "IS_24", "IS_29", "R_18", "IS_8", "IS_36", "F_37", "R_34", "R_36", "R_19", "IS_22", "F_35", "R_24", "R_9", "R_10", "R_4", "IS_11", "R_33", "IS_7", "F_50", "R_32", "F_70", "F_33", "F_12", "F_13", "F_66", "F_44", "IS_12", "IS_34", "F_71", "F_49", "IS_27", "F_4" ,"F_17", "F_52", "F_23", "R_2", "F_16", "IS_30", "F_2", "IS_14", "F_21", "IS_28", "F_53", "F_24", "F_6", "F_69", "F_67", "F_5", "R_1", "R_17", "R_29", "R_6", "F_48", "F_42", "IS_9", "F_51", "IS_6", "F_46", "IS_2", "IS_25", "IS_26", "F_68", "F_45", "F_8", "F_27", "R_16", "IS_23", "F_55", "F_20", "F_32", "R_25", "F_61", "F_10", "F_56", "IS_18", "R_22", "F_19", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "") #I hate hard coding... this looks really bad
+#vector below was manually added in the original excel worksheet
+data.conf$IS_R_F <- c("", "", "", "", "", "", "", "", "", "", "IS_17", "F_25", "IS_32", "IS_20", "F_47", "IS_5", "F_65", "F_38", "IS_33", "R_35", "F_43", "R_8", "F_22", "F_54", "IS_15", "F_40", "F_3", "F_60", "IS_3", "R_7", "IS_10", "R_14", "F_1", "F_9", "F_62", "F_7", "F_59", "IS_16", "IS_4", "F_28", "F_18", "IS_13", "F_15", "F_36", "F_31", "F_26", "R_21", "IS_19", "F_39", "R_28", "F_64", "R_26", "R_15", "F_57", "R_23", "R_3", "R_31", "F_58", "R_12", "F_11", "F_41", "F_72" ,"R_30", "F_14", "IS_21", "F_29", "F_34", "R_20", "R_5", "R_27", "IS_35", "F_30", "R_11", "F_63", "IS_1", "IS_31", "R_13", "IS_24", "IS_29", "R_18", "IS_8", "IS_36", "F_37", "R_34", "R_36", "R_19", "IS_22", "F_35", "R_24", "R_9", "R_10", "R_4", "IS_11", "R_33", "IS_7", "F_50", "R_32", "F_70", "F_33", "F_12", "F_13", "F_66", "F_44", "IS_12", "IS_34", "F_71", "F_49", "IS_27", "F_4" ,"F_17", "F_52", "F_23", "R_2", "F_16", "IS_30", "F_2", "IS_14", "F_21", "IS_28", "F_53", "F_24", "F_6", "F_69", "F_67", "F_5", "R_1", "R_17", "R_29", "R_6", "F_48", "F_42", "IS_9", "F_51", "IS_6", "F_46", "IS_2", "IS_25", "IS_26", "F_68", "F_45", "F_8", "F_27", "R_16", "IS_23", "F_55", "F_20", "F_32", "R_25", "F_61", "F_10", "F_56", "IS_18", "R_22", "F_19", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "") 
+#I hate hard coding... this looks really bad
 
 #using above column, categorize if the trial was ITEM, R, or FOIL
 data.conf$Category <- ifelse(grepl("IS", data.conf$IS_R_F),"ITEM", 
@@ -207,11 +205,14 @@ table.conf$New_H <- c(
 
 rownames(table.conf) <- c("TARGETS_ITEM", "TARGETS_R", "TARGETS_ALL", "FOILS")
 
-knitr::kable(table.conf, caption = "Targets by Confidence") %>%
+knitr::kable(table.conf, caption = "Targets by Image Type (Old, New) and Confidence (L, M, H)") %>%
   kable_styling(c("striped", "bordered"))
 ```
 
-### Item Recognition Totals
+<br><br>
+
+## ITEM RECOGNITION
+### Item Recognition Summary
 ``` {r retrieval, message = FALSE, echo = FALSE}
 #Item Recognition Totals
 IS.totals <- data.frame(
@@ -224,7 +225,7 @@ IS.totals <- data.frame(
   "TOTAL" = c(sum(table.conf[1:2, 1:3]), sum(table.conf[1:2, 4:6]), sum(table.conf[4, 1:3]), 
               sum(table.conf[4, 4:6]), sum(table.conf[1:2, 1:3])/72)
 )
-rownames(IS.totals) <- c('HITS', 'MISSES', 'FA', 'CM', '% Correct')
+rownames(IS.totals) <- c('HITS', 'MISSES', 'FALSE ALARM', 'CORRECT REJECTION', '% Correct')
 
 knitr::kable(format(IS.totals, digits = 6, drop0trailing = TRUE), 
              caption = "Item Recognition Totals", 
@@ -282,10 +283,10 @@ IS_percent <- c()
   }
 
 IS_Z <- c()
-  for(j in c(1:6)) {
+  for(j in c(2:6)) {
   IS_Z[j] <- if(sum(IS_flip[j:6])/36 == 1) {
   qnorm(0.999)
-} else if(sum(IS_flip[j:6])/36 ==0) {
+} else if(sum(IS_flip[j:6])/36 == 0) {
   qnorm(0.001)
 } else {
   qnorm(sum(IS_flip[j:6])/36)
@@ -293,20 +294,221 @@ IS_Z <- c()
   }
 
 ITEM_SPECIFIC <- data.frame(IS_flip, IS_percent, IS_Z)
+t_ITEM_SPECIFIC <- as.data.frame(t(ITEM_SPECIFIC))
+names(t_ITEM_SPECIFIC) <- c("8", "9", "0", "1", "2", "3")
+rownames(t_ITEM_SPECIFIC) <- c("Flipped", "Percentages", "Z-space")
 
 
-
-
+knitr::kable(format(t_ITEM_SPECIFIC, digits = 7, drop0trailing = TRUE), caption = "TARGETS_ITEM SPECIFIC") %>%
+  kable_styling(c("striped", "bordered"))
 
 #targets - relational
+R_flip <- c(table.conf[2, 6], table.conf[2, 5], table.conf[2, 4],
+             table.conf[2, 1], table.conf[2, 2], table.conf[2, 3])
+R_percent <- c()
+  for (i in 1:6) {
+    R_percent[i] <-sum(R_flip[i:6])/36
+  }
+
+R_Z <- c()
+  for(j in c(2:6)) {
+  R_Z[j] <- if(sum(R_flip[j:6])/36 == 1) {
+  qnorm(0.999)
+} else if(sum(R_flip[j:6])/36 == 0) {
+  qnorm(0.001)
+} else {
+  qnorm(sum(R_flip[j:6])/36)
+}
+  }
+
+REL <- data.frame(R_flip, R_percent, R_Z)
+t_REL <- as.data.frame(t(REL))
+names(t_REL) <- c("8", "9", "0", "1", "2", "3")
+rownames(t_REL) <- c("Flipped", "Percentages", "Z-space")
+
+knitr::kable(format(t_REL, digits = 7, drop0trailing = TRUE), caption = "TARGETS_RELATIONAL") %>%
+  kable_styling(c("striped", "bordered"))
 
 #targets - all
+ALL_flip <- c(table.conf[3, 6], table.conf[3, 5], table.conf[3, 4],
+             table.conf[3, 1], table.conf[3, 2], table.conf[3, 3])
+ALL_percent <- c()
+  for (i in 1:6) {
+    ALL_percent[i] <-sum(ALL_flip[i:6])/72
+  }
+
+ALL_Z <- c()
+  for(j in c(2:6)) {
+  ALL_Z[j] <- if(sum(ALL_flip[j:6])/72 == 1) {
+  qnorm(0.999)
+} else if(sum(ALL_flip[j:6])/72 == 0) {
+  qnorm(0.001)
+} else {
+  qnorm(sum(ALL_flip[j:6])/72)
+}
+  }
+
+ALL <- data.frame(ALL_flip, ALL_percent, ALL_Z)
+t_ALL <- as.data.frame(t(ALL))
+names(t_ALL) <- c("8", "9", "0", "1", "2", "3")
+rownames(t_ALL) <- c("Flipped", "Percentages", "Z-space")
+
+knitr::kable(format(t_ALL, digits = 7, drop0trailing = TRUE), caption = "TARGETS_ALL") %>%
+  kable_styling(c("striped", "bordered"))
 
 #foils 
+FOILS_flip <- c(table.conf[4, 6], table.conf[4, 5], table.conf[4, 4],
+             table.conf[4, 1], table.conf[4, 2], table.conf[4, 3])
+FOILS_percent <- c()
+  for (i in 1:6) {
+    FOILS_percent[i] <-sum(FOILS_flip[i:6])/72
+  }
+
+FOILS_Z <- c()
+  for(j in c(2:6)) {
+  FOILS_Z[j] <- if(sum(FOILS_flip[j:6])/72 == 1) {
+  qnorm(0.999)
+} else if(sum(FOILS_flip[j:6])/72 == 0) {
+  qnorm(0.001)
+} else {
+  qnorm(sum(FOILS_flip[j:6])/72)
+}
+  }
+
+FOILS <- data.frame(FOILS_flip, FOILS_percent, FOILS_Z)
+t_FOILS <- as.data.frame(t(FOILS))
+names(t_FOILS) <- c("8", "9", "0", "1", "2", "3")
+rownames(t_FOILS) <- c("Flipped", "Percentages", "Z-space")
+
+knitr::kable(format(t_FOILS, digits = 7, drop0trailing = TRUE), caption = "FOILS") %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+### Regression
+``` {r reg, echo = FALSE, messages = FALSE}
+dat <- data.frame("ITEM" = ITEM_SPECIFIC[, 3], "REL" = REL[,3], "ALL" = ALL[,3], "FOILS" = FOILS[,3])
+
+#Item Specific
+item.lm <- lm(ITEM ~ FOILS, data = dat) #linear model of ITEM and FOILS
+item.vec <- coef(item.lm) #vector with coefficients
+                  #intercept - coef(item.lm)[1]
+                  #slope - coef(item.lm)[2]
+item.da <- sqrt(2/1 + coef(item.lm)[2]^2)*coef(item.lm)[1] #'da' whatever this is...
+item.all <- sum(ITEM_SPECIFIC$IS_flip[4:6])/36 - sum(FOILS$FOILS_flip[4:6])/72 #all hits - FA
+item.hc <- ITEM_SPECIFIC$IS_flip[6]/36 - FOILS$FOILS_flip[6]/72 #HC hits - HC FA
+
+TARG_IS <- c(coef(item.lm)[2], coef(item.lm)[1], item.da, item.all, item.hc)
+
+#Relational
+rel.lm <- lm(REL ~ FOILS, dat)
+rel.vec <- coef(rel.lm)
+rel.da <- sqrt(2/1 + coef(rel.lm)[2]^2)*coef(rel.lm)[1]
+rel.all <- sum(REL$R_flip[4:6])/36 - sum(FOILS$FOILS_flip[4:6])/72
+rel.hc <- REL$R_flip[6]/36 - FOILS$FOILS_flip[6]/72
+
+TARG_REL <- c(coef(rel.lm)[2], coef(rel.lm)[1], rel.da, rel.all, rel.hc)
+
+#All
+all.lm <- lm(ALL ~ FOILS, dat)
+all.vec <- coef(all.lm)
+all.da <- sqrt(2/1 + coef(all.lm)[2]^2)*coef(all.lm)[1]
+all.all <- sum(ALL$ALL_flip[4:6])/72 - sum(FOILS$FOILS_flip[4:6])/72
+all.hc <- ALL$ALL_flip[6]/72 - FOILS$FOILS_flip[6]/72
+
+TARG_ALL <- c(coef(all.lm)[2], coef(all.lm)[1], all.da, all.all, all.hc)
+
+TARGFJ_table <- as.data.frame(cbind(TARG_IS, TARG_REL, TARG_ALL))
+rownames(TARGFJ_table) <- c("Slope", "Intercept", "da", "All Hits - FA", "HC Hits - HC FA")
+
+knitr::kable(format(TARGFJ_table, digits = 10, drop0trailing = TRUE), caption = "TARGFJ TABLE") %>%
+  kable_styling(c("striped", "bordered"))
+
+far <- (as.numeric(IS.totals[3, 3]) + 0.5)/(72+1)
+is.hit <- (as.numeric(IS.totals[1, 1]) + 0.5)/(72+1)
+is.disc <- is.hit - far
+is.bias <- far/(1-is.hit)
+
+TARG_IS <- c(is.hit, is.disc, is.bias)
+
+rel.hit <- (as.numeric(IS.totals[1, 2]) + 0.5)/(72+1)
+rel.disc <- rel.hit - far
+rel.bias <- far/(1-rel.hit)
+
+TARG_REL <- c(rel.hit, rel.disc, rel.bias)
+
+all.hit <- (as.numeric(IS.totals[1, 4]) + 0.5)/(72+1)
+all.disc <- all.hit - far
+all.bias <- far/(1-all.hit)
+
+TARG_ALL <- c(all.hit, all.disc, all.bias)
+
+TARG2 <- as.data.frame(cbind(TARG_IS, TARG_REL, TARG_ALL))
+rownames(TARG2) <- c("Hit Rate", "Discriminability", "Response Bias")
+
+knitr::kable(format(TARG2, digits = 10, drop0trailing = TRUE)) %>%
+  kable_styling(c("striped", "bordered"))
 ```
 
 ### DPSD Calculator
+##### The purpose of this chunk is to replicate the Excel version of DPSD (Dual Process Signal Detection) Calculator
+##### Signal detection theory: at what point are we able to detect a signal? d' = strength (signal-noise, or, the ability to discriminate signal from noise; greater the d', stronger the signal), C = stratrgy (threshold;B, D, C, Beta)
+
+##### function dpsdProb() from 'hbmem' package (https://rdrr.io/cran/hbmem/man/dpsdProbs.html)
 ``` {r DPSD, echo = TRUE}
+#cumulative proportion
+
+#Example (from https://rdrr.io/cran/hbmem/man/dpsdProbs.html)
+#Low r
+  #dpsdProbs(.2,1,c(-1,-.5,0,.5,1))  #studied
+  #dpsdProbs(0,-1,c(-1,-.5,0,.5,1)) #new
+
+#High r
+  #dpsdProbs(.6,1,c(-1,-.5,0,.5,1))  #studied
+  #dpsdProbs(0,-1,c(-1,-.5,0,.5,1)) #new
 ```
 
-### Associative Recognition Totals
+<br><br>
+
+## ASSOCIATIVE RECOGNITION
+``` {r assoc, message = FALSE, echo = FALSE}
+data.assoc <- retrieve.data %>%
+  select(ARTestSlide.ACC, AR_Pair_Description, AR_Pair_Type, ARTestSlide.RT)
+
+data.assoc <- data.assoc[!is.na(data.assoc$ARTestSlide.ACC), ]
+
+intact.hits <- sum(data.assoc$AR_Pair_Type == "Intact" & data.assoc$ARTestSlide.ACC == 1)
+reord.cm <- sum(data.assoc$AR_Pair_Type == "Reordered" & data.assoc$ARTestSlide.ACC == 1)
+accuracy <- intact.hits + reord.cm
+
+hits.rt <- sum(data.assoc[which(data.assoc[ ,1] == 1 & data.assoc[, 3] == "Intact"), 4])/(intact.hits)
+reord.rt <- sum(data.assoc[which(data.assoc[ ,1] == 1 & data.assoc[, 3] == "Reordered"), 4])/(reord.cm)
+acc.rt <- sum(data.assoc[which(data.assoc[ ,1] == 1), 4])/(accuracy)
+
+t.correct <- c(intact.hits, reord.cm, accuracy)
+p.correct <- c(intact.hits/18, reord.cm/18, accuracy/36)
+rt.correct <- c(hits.rt, reord.rt, acc.rt)
+
+assoc.table <- as.data.frame(cbind(t.correct, p.correct, rt.correct))
+rownames(assoc.table) <- c("Intact Hits", "Reordered CM", "Accurate Totals")
+colnames(assoc.table) <- c("# trials", "% Correct", "Average RT")
+
+knitr::kable(format(assoc.table, digits = 8, drop0trailing = TRUE), caption = "Associative Recognition Totals") %>%
+  kable_styling(c("striped", "bordered"))
+
+false.item <- sum(data.assoc$AR_Pair_Type == "Reordered" & data.assoc$ARTestSlide.ACC == 0)
+false.alarm.rate <- false.item/18
+false.rt <- sum(data.assoc[which(data.assoc[ ,1] == 0 & data.assoc[, 3] == "Reordered"), 4])/(false.item)
+
+falsealarms <- as.data.frame(cbind(false.item, false.alarm.rate, false.rt))
+rownames(falsealarms) <- "False Alamrs"
+colnames(falsealarms) <- c("# trials", "False Alarm Rate", "Average RT")
+
+knitr::kable(format(falsealarms, digits = 8, drop0trailing = TRUE), caption = "False Alarms") %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+<br><br>
+
+## Summary
+``` {r summary, messages = FALSE, echo = FALSE}
+```
